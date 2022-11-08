@@ -38,7 +38,8 @@ router.post('/google', verifyGoogleUser, async (req: Request, res: Response) => 
         } else {
           const newToken: string = jwt.sign({
             id: JSON.stringify(savedUser._id).slice(1, -1),
-            name: savedUser.name
+            name: savedUser.name,
+            admin: savedUser.admin
           }, JWT_SECRET, {
             expiresIn: '30d'
           })
@@ -51,7 +52,8 @@ router.post('/google', verifyGoogleUser, async (req: Request, res: Response) => 
     } else {
       const newToken: string = jwt.sign({
         id: JSON.stringify(currentUser._id).slice(1, -1),
-        name: currentUser.name
+        name: currentUser.name,
+        admin: currentUser.admin
       }, JWT_SECRET, {
         expiresIn: '30d'
       })

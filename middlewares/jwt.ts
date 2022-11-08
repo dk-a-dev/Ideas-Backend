@@ -31,4 +31,12 @@ const verifyJWT = (req: Request, res: Response, next: NextFunction) => {
   }
 }
 
+export const verifyAdmin = (req: Request, res: Response, next: NextFunction) => {
+  if (res.locals.user.admin) {
+    return next()
+  } else {
+    return res.status(403).json({ error: 'Forbidden. You are not an admin.' })
+  }
+}
+
 export default verifyJWT

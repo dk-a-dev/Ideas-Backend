@@ -26,6 +26,7 @@ interface IUser {
   notifications: INotification[]
   ideaCount: number
   commentCount: number
+  admin: boolean
 }
 
 interface IIdea extends Document {
