@@ -35,27 +35,32 @@ const ideaSchema = new Schema<IIdea>({
 
   gitLinks: {
     type: [String],
-    required: false
+    default: [],
+    required: true
   },
 
   deployedURLs: {
     type: [String],
-    required: false
+    default: [],
+    required: true
   },
 
   approved: {
     type: Boolean,
+    default: false,
     required: true
   },
 
   rejected: {
     type: Boolean,
+    default: false,
     required: true
   },
 
   madeReal: {
     type: Boolean,
-    required: false
+    default: false,
+    required: true
   },
 
   createdOn: Date

@@ -2,15 +2,15 @@ import { IIdea } from '../types/types'
 
 import fuzzysort from 'fuzzysort'
 
-const filterIdeas = (ideas: any, sortBy: any, order: any, user: any, tags: any, query: any, trending: any, madeReal: any) => {
+const filterIdeas = (ideas: any, sortBy: any, order: any, user: any, tags: any, query: any, trending: any, madeReal: any, offset: any, limit: any) => {
   // user filter
   if (trending === 'true') {
     sortBy = 'upvotes'
-    return ideas?.sort((a: IIdea, b: IIdea) => a.upvotes.length < b.upvotes.length)
+    return { ideas: ideas?.sort((a: IIdea, b: IIdea) => a.upvotes.length < b.upvotes.length) }
   }
 
   if (madeReal === 'true') {
-    return ideas
+    return { ideas }
   }
 
   if (user !== '') {
@@ -18,12 +18,24 @@ const filterIdeas = (ideas: any, sortBy: any, order: any, user: any, tags: any, 
   }
 
   let results
+
+  query = query.trim()
   // search query fuzzy matching
   if (query !== '') {
-    results = fuzzysort.go(query, ideas, { keys: ['title', 'description', 'authorName', 'createdOn'] })
+    results = fuzzysort.go(query, ideas, { keys: ['title', 'description', 'authorName'] })
       .map((res) => {
         return { idea: res.obj, score: res.score }
       })
+    results = results.filter(a => a.score > -500)
+    results = results.sort((a, b) => b.score - a.score)
+    ideas = ideas?.slice(offset, limit)
+  } else {
+    results = ideas.map((idea: any) => {
+      return {
+        idea,
+        score: 0
+      }
+    })
   }
 
   switch (sortBy) {

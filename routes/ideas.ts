@@ -14,13 +14,13 @@ router.get('/', ideaController.getAllIdeas)
 
 router.post('/', jwt, ideaController.createIdea)
 
-router.get('/:ideaId', jwt, verifyPathParams(['ideaId']), ideaController.getIdeaById)
+router.get('/:ideaId', verifyPathParams(['ideaId']), ideaController.getIdeaById)
 
 router.put('/:ideaId', jwt, verifyPathParams(['ideaId']), ideaController.editIdea)
 
 router.delete('/:ideaId', jwt, verifyPathParams(['ideaId']), ideaController.deleteIdea)
 
-router.get('/user/:userId', jwt, verifyPathParams(['userId']), ideaController.getIdeaByUserId)
+router.get('/user/:userId', verifyPathParams(['userId']), ideaController.getIdeaByUserId)
 
 router.patch('/:ideaId/vote', jwt, verifyPathParams(['ideaId']), ideaController.voteIdea)
 
