@@ -97,11 +97,56 @@ const getNotifications = async (req: Request, res: Response): Promise<Response> 
   }
 }
 
+const readNotification = async (req: Request, res: Response): Promise<Response> => {
+  const notificationId = res.locals?.notificationId || ''
+  const userId: string = res.locals.user.id || ''
+
+  const mongoNotifId = new mongoose.Types.ObjectId(notificationId)
+
+  const newStatus = req.body?.newStatus || false
+
+  try {
+    await User.updateOne({ _id: userId, 'notifications._id': mongoNotifId }, {
+      $set: { 'notifications.$.read': newStatus }
+    })
+    return res.status(200).json({ message: 'Successfully updated notification status.' })
+  } catch (e) {
+    console.error(e)
+    return res.status(500).json({ error: 'Internal server error. Could not change notification status.' })
+  }
+}
+
+const clearNotification = async (req: Request, res: Response): Promise<Response> => {
+  const userId: string = res.locals.user.id || ''
+  const notificationId = res.locals?.notificationId || ''
+
+  try {
+    User.updateOne({ _id: userId }, { $pull: { notifications: { _id: notificationId } } })
+    return res.status(200).json({ message: 'Successfully cleared notification.' })
+  } catch (e) {
+    return res.status(500).json({ error: 'Internal Server Error.' })
+  }
+}
+
+const clearAllNotifications = async (req: Request, res: Response): Promise<Response> => {
+  const userId: string = res.locals.user.id || ''
+
+  try {
+    await User.updateOne({ _id: userId }, { $set: { notifications: [] } })
+    return res.status(200).json({ message: 'Successfully cleared all notifications' })
+  } catch {
+    return res.status(500).json({ error: 'Internal Server Error.' })
+  }
+}
+
 export {
   getAllUsers,
   getUserComments,
   getUserIdeas,
   getUnapprovedIdeas,
   getUserProfile,
-  getNotifications
+  getNotifications,
+  readNotification,
+  clearNotification,
+  clearAllNotifications
 }

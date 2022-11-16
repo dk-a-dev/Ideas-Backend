@@ -14,8 +14,48 @@ const notificationsSchema = new Schema<INotification>({
     required: true
   },
 
-  source: {
+  parentIdeaId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true
+  },
+
+  parentIdeaTitle: {
     type: String,
+    required: true
+  },
+
+  parentIdeaAuthorId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true
+  },
+
+  parentIdeaAuthorName: {
+    type: String,
+    required: true
+  },
+
+  commentAuthorId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true
+  },
+
+  commentAuthorName: {
+    type: String,
+    required: true
+  },
+
+  commentAuthorPicture: {
+    type: String,
+    required: true
+  },
+
+  sourceBody: {
+    type: String,
+    required: true
+  },
+
+  source: {
+    type: mongoose.Schema.Types.ObjectId,
     required: true
   },
 
@@ -70,6 +110,11 @@ const userSchema = new Schema<IUser>({
     type: Number,
     required: true,
     default: 0
+  },
+  admin: {
+    type: Boolean,
+    required: true,
+    default: false
   }
 }, {
   versionKey: false

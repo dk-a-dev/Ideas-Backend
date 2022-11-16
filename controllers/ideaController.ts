@@ -10,50 +10,78 @@ import filterIdeas from '../utils/filterIdeas'
 const getAllIdeas = async (req: Request, res: Response) => {
   let ideas
 
-  const offset = req.query?.offset || 0
-  const limit = req.query?.limit || 20
   const sortBy = req.query?.sortBy || 'date' // date, title, users given name, upvotes
   const order = req.query?.order || 'asc' // asc, desc
   const user = req.query?.user || '' // filter by user
   const tags = req.query?.tags || '' // comma separated tags (?tags=tag1,tag2,tag3)`
   const query = req.query?.query || '' // the search query
+  const realOffset = req.query?.offset || 0
+  const realLimit = req.query?.limit || 20
+  let offset = req.query?.offset || 0
+  let limit = req.query?.limit || 20
+  if (query !== '') {
+    offset = 0
+    limit = 1000
+  }
   const trending = req.query?.trending || 'false'
   const madeReal = req.query?.madeReal || 'false'
-  const startDate = req.query?.startDate || '1629523280'
-  const endDate = req.query?.endDate || Date.now()
 
-  console.log({ startDate, endDate })
+  let startDate
+  try {
+    startDate = req.query?.startDate || new Date(1629523280 * 1000)
+    startDate = new Date(startDate as string)
+  } catch {
+    return res.status(400).json({ error: 'Bad request, invalid start date.' })
+  }
+
+  let endDate
+  try {
+    endDate = req.query?.endDate || Date.now()
+    endDate = new Date(endDate as string)
+    endDate = endDate.setDate(endDate.getDate() + 1)
+  } catch {
+    return res.status(400).json({ error: 'Bad request, invalid end date.' })
+  }
+
+  console.log(endDate.toString())
 
   try {
     if (trending === 'true') {
-      ideas = await Idea.find().limit(20).populate('author', 'picture').lean()
+      ideas = await Idea.find({ approved: true }).limit(20).populate('author', 'picture').lean()
     } else if (madeReal === 'true') {
       ideas = await Idea.find({ madeReal: true }).limit(20).populate('author', 'picture').lean()
     } else if (tags.length) {
-      ideas = await Idea.find({ createdOn: { $gte: startDate, $lte: endDate }, tags: { $all: (tags as string).split(',') } }).skip(offset as number).limit(limit as number).populate('author', 'picture').lean()
+      ideas = await Idea.find({ approved: true, createdOn: { $gte: startDate, $lte: endDate }, tags: { $all: (tags as string).split(',') } }).sort('1').skip(offset as number).limit(limit as number).populate('author', 'picture').lean()
     } else {
-      ideas = await Idea.find({ createdOn: { $gte: startDate, $lte: endDate } }).skip(offset as number).limit(limit as number).populate('author', 'picture').lean()
+      ideas = await Idea.find({ approved: true, createdOn: { $gte: startDate, $lte: endDate } }).sort({ createdOn: -1 }).skip(offset as number).limit(limit as number).populate('author', 'picture').lean()
     }
   } catch {
     return res.status(502).json({ error: 'Could not retrieve ideas from the database.' })
   }
 
-  const filtered = filterIdeas(ideas, sortBy, order, user, tags, query, trending, madeReal)
-
+  const filtered = filterIdeas(ideas, sortBy, order, user, tags, query, trending, madeReal, realOffset, realLimit)
   return res.status(200).json({ ideas: filtered?.ideas, searchResults: filtered?.matches })
 }
 
-const getIdeaById = async (_req: Request, res: Response) => {
+const getIdeaById = async (req: Request, res: Response) => {
   const ideaId = res.locals.ideaId
+
+  const editing = req.query?.edit || 'false'
+
   try {
-    const idea = await Idea.findById(ideaId).populate('author').lean()
+    let idea
+    if (editing === 'true') {
+      idea = await Idea.findById(ideaId).lean()
+      return res.status(200).json({ idea })
+    } else {
+      idea = await Idea.findById(ideaId).populate('author').lean()
+      const comments = await Comment.find({
+        ideaId,
+        parentCommentId: { $exists: false }
+      }).populate('author', 'name picture').lean()
 
-    const comments = await Comment.find({
-      ideaId,
-      parentCommentId: { $exists: false }
-    }).populate('author', 'name picture').lean()
-
-    return res.status(200).json({ idea, comments })
+      return res.status(200).json({ idea, comments })
+    }
   } catch {
     return res.status(500).json({ error: 'Could not find idea.' })
   }
@@ -74,11 +102,12 @@ const getIdeaByUserId = async (req: Request, res: Response) => {
 
   try {
     let ideas: ideaWithComments[] = await Idea.find({
-      author: mongoUserId
+      author: mongoUserId,
+      approved: true
     }).populate('author', 'name picture').lean()
 
     ideas = await Promise.all(ideas.map(async (idea) => {
-      idea.comments = await Comment.find({ ideaId: idea._id })
+      idea.comments = await Comment.find({ ideaId: idea._id }).populate('author', '_id name picture')
       return idea
     }))
 

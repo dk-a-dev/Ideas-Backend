@@ -1,10 +1,18 @@
-import { Types } from 'mongoose'
+import { Document, Types } from 'mongoose'
 
 interface INotification {
-  createdOn: Date
-  body: string
-  source: string
-  notificationType: number
+  createdOn: Number
+  body: String
+  source: Types.ObjectId
+  parentIdeaId: Types.ObjectId | string | undefined
+  parentIdeaTitle: string
+  parentIdeaAuthorId: Types.ObjectId | string | undefined
+  parentIdeaAuthorName: string
+  commentAuthorId: Types.ObjectId | string | undefined
+  commentAuthorName: string
+  commentAuthorPicture: string | undefined
+  sourceBody: String
+  notificationType: Number
   read: boolean
 }
 
@@ -18,10 +26,10 @@ interface IUser {
   notifications: INotification[]
   ideaCount: number
   commentCount: number
+  admin: boolean
 }
 
-interface IIdea {
-  _id: Types.ObjectId
+interface IIdea extends Document {
   author: Types.ObjectId
   authorName: string
   title: string
