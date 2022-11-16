@@ -10,14 +10,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/pranjaltimsina/ideas-backend.git"
+    "url": "git+https://github.com/GDGVIT/Ideas-Backend.git"
   },
   "author": "Pranjal Timsina",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/pranjaltimsina/ideas-backend/issues"
+    "url": "https://github.com/GDGVIT/Ideas-Backend/issues"
   },
-  "homepage": "https://github.com/pranjaltimsina/ideas-backend#readme",
+  "homepage": "https://github.com/GDGVIT/Ideas-Backend#readme",
   "dependencies": {
     "compression": "^1.7.4",
     "cors": "^2.8.5",

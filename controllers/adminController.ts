@@ -24,7 +24,7 @@ const makeReal = async (req: Request, res: Response): Promise<Response> => {
     return res.status(400).json({ error: 'Bad request. Missing ideaId in request.' })
   }
 
-  const stuff: makeRealRequestBody = req.body.idea
+  const stuff: makeRealRequestBody = req.body
 
   stuff?.deployedURLs?.forEach(url => {
     try {
@@ -47,7 +47,7 @@ const makeReal = async (req: Request, res: Response): Promise<Response> => {
     const theIdea: IIdea | null = await Idea.findOneAndUpdate({ _id: ideaId },
       {
         $set: {
-          gitlinks: stuff?.gitLinks || [],
+          gitLinks: stuff?.gitLinks || [],
           deployedURLs: stuff?.deployedURLs || [],
           madeReal: true
         }
@@ -64,7 +64,7 @@ const makeReal = async (req: Request, res: Response): Promise<Response> => {
 
 const editReal = async (req: Request, res: Response): Promise<Response> => {
   const ideaID = res.locals.ideaId || ''
-  const stuff: editRealBody = req.body.idea
+  const stuff: editRealBody = req.body
   stuff?.deployedURLs?.forEach(url => {
     try {
       Boolean(new URL(url))
@@ -107,7 +107,7 @@ const editReal = async (req: Request, res: Response): Promise<Response> => {
 
 const approveOrReject = async (req: Request, res: Response): Promise<Response> => {
   const ideaID = res.locals.ideaId || ''
-  const stuff: approveOrRejectBody = req.body.idea
+  const stuff: approveOrRejectBody = req.body
   try {
     const idea: IIdea | null = await Idea.findOne({ _id: ideaID })
     if (idea === null) {
@@ -121,12 +121,23 @@ const approveOrReject = async (req: Request, res: Response): Promise<Response> =
     await idea.save()
     return res.status(200).json({ idea })
   } catch (err) {
+    console.log(err)
     return res.status(500).json({ error: 'Could not update idea.' })
+  }
+}
+
+const getAllIdeas = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const ideas: IIdea[] = await Idea.find({})
+    return res.status(200).json({ ideas })
+  } catch (err) {
+    return res.status(500).json({ error: 'Could not get ideas.' })
   }
 }
 
 export {
   makeReal,
   editReal,
-  approveOrReject
+  approveOrReject,
+  getAllIdeas
 }
