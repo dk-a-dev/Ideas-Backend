@@ -17,4 +17,7 @@ router.get('/all', verifyJWT, verifyAdmin, adminController.getAllIdeas)
 // approve or reject an idea
 router.post('/approve/:ideaId', verifyPathParams(['ideaId']), verifyJWT, verifyAdmin, adminController.approveOrReject)
 
+// reset idea
+router.patch('/reset/:ideaId', verifyPathParams(['ideaId']), verifyJWT, verifyAdmin, adminController.resetIdea)
+
 export default router

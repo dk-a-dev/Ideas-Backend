@@ -39,8 +39,7 @@ interface IIdea extends Document {
   tags: string[]
   gitLinks?: string[]
   deployedURLs?: string[]
-  approved: Boolean
-  rejected: Boolean
+  status?: string
   madeReal?: Boolean
   createdOn: Date
 }

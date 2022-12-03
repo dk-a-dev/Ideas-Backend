@@ -18,15 +18,14 @@ interface approveOrRejectBody {
 }
 
 const makeReal = async (req: Request, res: Response): Promise<Response> => {
-  const ideaId = res.locals.ideaId || ''
-
+  const ideaId = req.params.ideaId || res.locals.ideaId || ''
   if (ideaId === '') {
     return res.status(400).json({ error: 'Bad request. Missing ideaId in request.' })
   }
 
-  const stuff: makeRealRequestBody = req.body
+  const body: makeRealRequestBody = req.body
 
-  stuff?.deployedURLs?.forEach(url => {
+  body?.deployedURLs?.forEach(url => {
     try {
       Boolean(new URL(url))
     } catch (_) {
@@ -34,7 +33,7 @@ const makeReal = async (req: Request, res: Response): Promise<Response> => {
     }
   })
 
-  stuff?.gitLinks?.forEach(url => {
+  body?.gitLinks?.forEach(url => {
     try {
       Boolean(new URL(url))
     } catch (_) {
@@ -47,8 +46,8 @@ const makeReal = async (req: Request, res: Response): Promise<Response> => {
     const theIdea: IIdea | null = await Idea.findOneAndUpdate({ _id: ideaId },
       {
         $set: {
-          gitLinks: stuff?.gitLinks || [],
-          deployedURLs: stuff?.deployedURLs || [],
+          gitLinks: body?.gitLinks || [],
+          deployedURLs: body?.deployedURLs || [],
           madeReal: true
         }
       },
@@ -63,7 +62,7 @@ const makeReal = async (req: Request, res: Response): Promise<Response> => {
 }
 
 const editReal = async (req: Request, res: Response): Promise<Response> => {
-  const ideaID = res.locals.ideaId || ''
+  const ideaID = req.params.ideaId || res.locals.ideaId || ''
   const stuff: editRealBody = req.body
   stuff?.deployedURLs?.forEach(url => {
     try {
@@ -106,7 +105,7 @@ const editReal = async (req: Request, res: Response): Promise<Response> => {
 }
 
 const approveOrReject = async (req: Request, res: Response): Promise<Response> => {
-  const ideaID = res.locals.ideaId || ''
+  const ideaID = req.params.ideaId || res.locals.ideaId || ''
   const stuff: approveOrRejectBody = req.body
   try {
     const idea: IIdea | null = await Idea.findOne({ _id: ideaID })
@@ -114,10 +113,30 @@ const approveOrReject = async (req: Request, res: Response): Promise<Response> =
       return res.status(500).json({ error: 'Idea Not Found' })
     }
     if (stuff.status === 'approved') {
-      idea.approved = true
-    } else {
-      idea.rejected = true
+      idea.status = stuff.status
+      await idea.save()
+      return res.status(200).json({ idea })
+    } else if (stuff.status === 'rejected') {
+      idea.status = stuff.status
+      await idea.save()
+      return res.status(200).json({ idea })
     }
+    return res.status(500).json({ error: 'Bad Request. Status must be approved or rejected.' })
+  } catch (err) {
+    console.log(err)
+    return res.status(500).json({ error: 'Could not update idea.' })
+  }
+}
+
+const resetIdea = async (req: Request, res: Response): Promise<Response> => {
+  const ideaID = req.params.ideaId || res.locals.ideaId || ''
+  console.log(ideaID)
+  try {
+    const idea: IIdea | null = await Idea.findOne({ _id: ideaID })
+    if (idea == null) {
+      return res.status(500).json({ error: 'Idea Not Found' })
+    }
+    idea.status = ''
     await idea.save()
     return res.status(200).json({ idea })
   } catch (err) {
@@ -138,6 +157,7 @@ const getAllIdeas = async (req: Request, res: Response): Promise<Response> => {
 export {
   makeReal,
   editReal,
+  resetIdea,
   approveOrReject,
   getAllIdeas
 }
