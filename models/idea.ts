@@ -45,24 +45,15 @@ const ideaSchema = new Schema<IIdea>({
     required: true
   },
 
-  approved: {
-    type: Boolean,
-    default: false,
-    required: true
+  status: {
+    type: String,
+    default: ''
   },
-
-  rejected: {
-    type: Boolean,
-    default: false,
-    required: true
-  },
-
   madeReal: {
     type: Boolean,
     default: false,
     required: true
   },
-
   createdOn: Date
 }, {
   versionKey: false
