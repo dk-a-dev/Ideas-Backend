@@ -47,7 +47,7 @@ const ideaSchema = new Schema<IIdea>({
 
   status: {
     type: String,
-    default: ''
+    default: 'pending'
   },
   madeReal: {
     type: Boolean,

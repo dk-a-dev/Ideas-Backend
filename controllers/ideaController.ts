@@ -5,62 +5,122 @@ import Comment from '../models/comment'
 import Idea from '../models/idea'
 import { User } from '../models/user'
 import { IIdea } from '../types/types'
-import filterIdeas from '../utils/filterIdeas'
+import fuzzysort from 'fuzzysort'
 
 const getAllIdeas = async (req: Request, res: Response) => {
   let ideas
 
   const sortBy = req.query?.sortBy || 'date' // date, title, users given name, upvotes
   const order = req.query?.order || 'asc' // asc, desc
-  const user = req.query?.user || '' // filter by user
-  const tags = req.query?.tags || '' // comma separated tags (?tags=tag1,tag2,tag3)`
-  const query = req.query?.query || '' // the search query
-  const realOffset = req.query?.offset || 0
-  const realLimit = req.query?.limit || 20
-  let offset = req.query?.offset || 0
-  let limit = req.query?.limit || 20
-  if (query !== '') {
-    offset = 0
-    limit = 1000
-  }
-  const trending = req.query?.trending || 'false'
-  const madeReal = req.query?.madeReal || 'false'
+  const _user = req.query?.user || '' // filter by user
+  const _tags = req.query?.tags || '' // comma separated tags (?tags=tag1,tag2,tag3)`
+  const madeReal = req.query?.madeReal
 
-  let startDate
+  const _offset = req.query?.offset || 0
+  const _limit = req.query?.limit || 20
+  const offset: number = _offset as number
+  const limit: number = _limit as number
+  const _query = req.query?.query || '' // search query
+  let query: string = _query as string
+  const user = _user as string
+  const tags = _tags as string
+
+  const _startDate = req.query?.startDate || new Date(1629523280 * 1000)
+  let startDate: Date = _startDate as Date
   try {
-    startDate = req.query?.startDate || new Date(1629523280 * 1000)
-    startDate = new Date(startDate as string)
+    startDate = new Date(_startDate as string)
   } catch {
     return res.status(400).json({ error: 'Bad request, invalid start date.' })
   }
 
-  let endDate
+  const _endDate = req.query?.endDate || Date.now()
+  let endDate: Date = _endDate as unknown as Date
   try {
-    endDate = req.query?.endDate || Date.now()
-    endDate = new Date(endDate as string)
-    endDate = endDate.setDate(endDate.getDate() + 1)
+    endDate = new Date(_endDate as string)
+    endDate = endDate.setDate(endDate.getDate() + 1) as unknown as Date
   } catch {
     return res.status(400).json({ error: 'Bad request, invalid end date.' })
   }
-
-  console.log(endDate.toString())
-
+  let results
   try {
-    if (trending === 'true') {
-      ideas = await Idea.find({ approved: true }).limit(20).populate('author', 'picture').lean()
-    } else if (madeReal === 'true') {
-      ideas = await Idea.find({ madeReal: true }).limit(20).populate('author', 'picture').lean()
-    } else if (tags.length) {
-      ideas = await Idea.find({ approved: true, createdOn: { $gte: startDate, $lte: endDate }, tags: { $all: (tags as string).split(',') } }).sort('1').skip(offset as number).limit(limit as number).populate('author', 'picture').lean()
+    if (madeReal === 'true') {
+      ideas = await Idea.find({
+        status: 'approved',
+        madeReal: true
+      })
+    } else if (madeReal === 'false') {
+      ideas = await Idea.find({
+        status: 'approved',
+        madeReal: false
+      }).populate('author', 'picture name')
     } else {
-      ideas = await Idea.find({ approved: true, createdOn: { $gte: startDate, $lte: endDate } }).sort({ createdOn: -1 }).skip(offset as number).limit(limit as number).populate('author', 'picture').lean()
+      ideas = await Idea.find({ $or: [{ madeReal: true }, { status: 'approved' }] }).populate('author', 'picture name')
     }
+    if (sortBy === 'date') {
+      ideas = ideas.sort((a: IIdea, b: IIdea) => {
+        return a.createdOn.getTime() - b.createdOn.getTime()
+      })
+    } else if (sortBy === 'title') {
+      ideas = ideas.sort((a: IIdea, b: IIdea) => {
+        return a.title.localeCompare(b.title)
+      })
+    } else if (sortBy === 'upvotes') {
+      ideas = ideas.sort((a: IIdea, b: IIdea) => {
+        return a.upvotes.length - b.upvotes.length
+      })
+    } else if (sortBy === 'downvotes') {
+      ideas = ideas.sort((a: IIdea, b: IIdea) => {
+        return a.downvotes.length - b.downvotes.length
+      })
+    }
+    // else if (sortBy === 'user') {
+    //   ideas = ideas.sort((a: IIdea, b: IIdea) => {
+    //     return a.authorName.localeCompare(b.authorName)
+    //   })
+    // }
+
+    if (order !== 'desc') {
+      ideas = ideas.reverse()
+    }
+
+    if (user !== '') {
+      ideas = ideas.filter((idea: IIdea) => {
+        return idea.authorName.toLowerCase() === user.toLowerCase()
+      })
+    }
+    if (tags !== '') {
+      const tagsArray = tags.split(',')
+      ideas = ideas.filter((idea: IIdea) => {
+        return idea.tags.some((tag: string) => {
+          return tagsArray.includes(tag)
+        })
+      })
+    }
+
+    if (startDate) {
+      ideas = ideas.filter((idea: IIdea) => {
+        return idea.createdOn >= startDate
+      })
+    }
+    if (endDate) {
+      ideas = ideas.filter((idea: IIdea) => {
+        return idea.createdOn <= endDate
+      })
+    }
+    if (query !== '') {
+      query = query.trim()
+      results = fuzzysort.go(query, ideas, { keys: ['title', 'description', 'author.name'] }).map(result => {
+        return { score: result.score, idea: result.obj }
+      })
+    }
+    // time to paginate
+    ideas = ideas.slice(offset, offset + limit)
+    results = results?.slice(offset, offset + limit)
+
+    return res.status(200).json({ ideas, results })
   } catch {
     return res.status(502).json({ error: 'Could not retrieve ideas from the database.' })
   }
-
-  const filtered = filterIdeas(ideas, sortBy, order, user, tags, query, trending, madeReal, realOffset, realLimit)
-  return res.status(200).json({ ideas: filtered?.ideas, searchResults: filtered?.matches })
 }
 
 const getIdeaById = async (req: Request, res: Response) => {
