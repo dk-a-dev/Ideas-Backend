@@ -7,7 +7,7 @@ import verifyJWT, { verifyAdmin } from '../middlewares/jwt'
 const router: Router = express.Router()
 
 // add made real (post github links and deployed urls)
-router.post('/makeReal/:ideaId', verifyPathParams(['ideaId']), verifyJWT, verifyAdmin, adminController.makeReal)
+// router.post('/makeReal/:ideaId', verifyPathParams(['ideaId']), verifyJWT, verifyAdmin, adminController.makeReal)
 
 // edit github links and deployed urls
 router.patch('/makeReal/:ideaId', verifyPathParams(['ideaId']), verifyJWT, verifyAdmin, adminController.editReal)
@@ -19,5 +19,9 @@ router.post('/approve/:ideaId', verifyPathParams(['ideaId']), verifyJWT, verifyA
 
 // reset idea
 router.patch('/reset/:ideaId', verifyPathParams(['ideaId']), verifyJWT, verifyAdmin, adminController.resetIdea)
+
+router.get('/approved', verifyJWT, verifyAdmin, adminController.getallApproved)
+
+router.get('/rejected', verifyJWT, verifyAdmin, adminController.getallRejected)
 
 export default router

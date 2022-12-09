@@ -12,8 +12,8 @@
     "type": "git",
     "url": "git+https://github.com/GDGVIT/Ideas-Backend.git"
   },
-  "author": "Pranjal Timsina",
-  "license": "ISC",
+  "author": "Anuj Parihar",
+  "license": "GPL-3.0-or-later",
   "bugs": {
     "url": "https://github.com/GDGVIT/Ideas-Backend/issues"
   },

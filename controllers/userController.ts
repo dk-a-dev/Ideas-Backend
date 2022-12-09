@@ -80,7 +80,13 @@ const getUserProfile = async (req: Request, res: Response): Promise<Response> =>
     if (user === null) {
       return res.status(404).json({ error: 'User not found.' })
     }
-    return res.status(200).json({ user })
+    const ideas = await Idea.find({ author: userId })
+    const object = {
+      user,
+      noOfIdeas: ideas.length
+    }
+    // This is being done, because of too many breaking changes in the previous codebase
+    return res.status(200).json(object)
   } catch {
     return res.status(500).json({ error: 'Could not fetch user data.' })
   }
