@@ -17,7 +17,7 @@ const verify = async (req: Request, res: Response, next: NextFunction) => {
   if (!userToken) {
     return res.status(400).json({ error: 'Bad request. Perhaps you forgot to send the user Token.' })
   } else {
-    await client.verifyIdToken({
+    client.verifyIdToken({
       idToken: userToken,
       audience: CLIENT_ID
     }, (err: Error | null, login?: LoginTicket | undefined) => {

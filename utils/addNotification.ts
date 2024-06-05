@@ -19,50 +19,54 @@ const addMention = async (doc: IComment & mongoose.Document, mentionType: string
       doc?.body,
       mention?.userId,
       `${doc?.authorName} mentioned you in a ${mentionType}.`,
-      doc?._id,
+      new mongoose.Types.ObjectId(doc._id as string),
       1)
   })
 }
 
 const addCommentNotification = async (doc: IComment & mongoose.Document) => {
-  const ideaAuthor: IIdea & { author: { name: string, _id: string } } = await Idea.findById(doc.ideaId).populate('author', 'picture name').select('author').lean()
+  const ideaAuthor: IIdea & { author: { name: string, _id: string } } | null = await Idea.findById(doc.ideaId).populate('author', 'picture name').select('author').lean()
   const commentAuthor = await User.findById(doc?.author).select('picture')
 
-  await addMention(doc, 'comment', ideaAuthor, commentAuthor)
-  console.log(ideaAuthor)
+  if (ideaAuthor) {
+    await addMention(doc, 'comment', ideaAuthor, commentAuthor)
+    console.log(ideaAuthor)
+  }
   await addNotification(
     doc?.ideaId,
     doc?.ideaTitle,
     ideaAuthor?.author?._id,
-    ideaAuthor?.author?.name,
+    ideaAuthor?.author?.name || '',
     doc?.author,
     doc?.authorName,
     commentAuthor?.picture,
     doc?.body,
     ideaAuthor?.author?._id,
     `${doc.authorName} added a comment to your idea`,
-    doc._id,
+    new mongoose.Types.ObjectId(doc._id as string), // Cast doc._id to string
     1
   )
 }
 
 const addReplyNotification = async (doc: IComment & mongoose.Document) => {
-  const ideaAuthor: IIdea & { author: { name: string, _id: string } } = await Idea.findById(doc.ideaId).populate('author', 'picture name').select('author').lean()
+  const ideaAuthor: IIdea & { author: { name: string, _id: string } } | null = await Idea.findById(doc.ideaId).populate('author', 'picture name').select('author').lean()
   const commentAuthor = await User.findById(doc?.author).select('picture')
 
-  await addMention(doc, 'reply', ideaAuthor, commentAuthor)
+  if (ideaAuthor) {
+    await addMention(doc, 'reply', ideaAuthor, commentAuthor)
+  }
   await addNotification(
     doc?.ideaId,
     doc?.ideaTitle,
-    ideaAuthor?.author?._id,
-    ideaAuthor?.author?.name,
+    ideaAuthor?.author?._id as mongoose.Types.ObjectId | undefined, // Cast ideaAuthor?.author?._id to mongoose.Types.ObjectId | undefined
+    ideaAuthor?.author?.name || '', // Provide a default value for ideaAuthor?.author?.name
     doc.author,
     doc?.authorName,
     commentAuthor?.picture,
     doc?.body,
-    ideaAuthor?._id,
+    ideaAuthor?._id as mongoose.Types.ObjectId | undefined, // Cast ideaAuthor?._id to mongoose.Types.ObjectId | undefined
     `${doc.authorName} replied to a comment in your idea.`,
-    doc._id, 1
+    new mongoose.Types.ObjectId(doc._id as string),
   )
 
   const parentCommentAuthor = await Comment.findById(doc?.parentCommentId).select('author').lean()
@@ -70,14 +74,14 @@ const addReplyNotification = async (doc: IComment & mongoose.Document) => {
     doc?.ideaId,
     doc?.ideaTitle,
     ideaAuthor?.author?._id,
-    ideaAuthor?.author?.name,
+    ideaAuthor?.author?.name || '', // Provide a default value for ideaAuthor?.author?.name
     doc.author,
     doc?.authorName,
     commentAuthor?.picture,
     doc?.body,
     parentCommentAuthor?._id,
     `${doc.authorName} replied to your comment.`,
-    doc._id,
+    new mongoose.Types.ObjectId(doc._id as string),
     1
   )
 }
